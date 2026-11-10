@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#254f43"><meta name="description" content="免费将 MIDI 转换成五线谱。浏览器内转换，无需 AI token，支持 PDF 和 MusicXML 导出。">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Staves · 让 MIDI 跃然纸上</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+<script defer src="assets/abcjs-basic-min.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar" aria-label="乐谱库">
+ <a class="brand" href="./" aria-label="Staves 首页"><img src="assets/icon.svg" alt="" width="36" height="36"><span>staves<span class="brand-dot">.</span></span></a>
+ <div class="library-heading"><h2>我的乐谱</h2><span id="file-count">0</span></div>
+ <button class="button primary import-trigger sidebar-import"><span aria-hidden="true">＋</span> 导入 MIDI</button>
+ <div id="file-list" class="file-list"><p class="library-empty">你的下一段旋律，<br>从这里开始。</p></div>
+ <div class="sidebar-bottom"><div class="local-badge"><span class="status-dot"></span>只在你的设备上</div><p>文件保存在当前浏览器，<br>不会上传到服务器。</p><button id="help-button" class="text-button">使用说明与支持范围 ↗</button></div>
+</aside>
+<main>
+ <header class="topbar"><span class="eyebrow">MIDI → SHEET MUSIC</span><div class="topbar-right"><span class="offline-label" id="offline-status">本地转换</span><button id="install-button" class="text-button" hidden>添加到桌面 ↗</button><button id="help-mobile" class="icon-button" aria-label="使用说明">?</button></div></header>
+ <section id="welcome" class="welcome">
+  <div class="intro"><span class="section-tag"><span class="status-dot"></span> 为每一段旋律，找到纸上的位置</span><h1>你的音乐，<br><em>清晰成谱。</em></h1><p>将 MIDI 文件变成可阅读、可分享的五线谱。<br>无需安装，无需 AI，打开就能开始。</p></div>
+  <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择或拖入 MIDI 文件">
+   <div class="upload-icon" aria-hidden="true">↥</div><h2>把你的 MIDI 放在这里</h2><p>拖入文件，或点击从设备选择</p><span class="file-types">.mid / .midi · 每个文件最多 10 MB · 支持多选</span><span class="button primary">选择 MIDI 文件 <span aria-hidden="true">↗</span></span>
+  </div>
+  <div class="demo-row"><span>还没有文件？</span><button id="sample-button" class="text-button">试试示例《First light》 <span aria-hidden="true">→</span></button></div>
+  <div class="benefits"><div><span>01</span><h3>留在本地</h3><p>你的创作，始终由你保管。</p></div><div><span>02</span><h3>不消耗 token</h3><p>固定程序转换，不调用 AI 模型。</p></div><div><span>03</span><h3>轻松带走</h3><p>存为 PDF，或导出可编辑 MusicXML。</p></div></div>
+ </section>
+ <section id="editor" class="editor" hidden>
+  <div class="score-heading"><div><span class="eyebrow">YOUR SCORE</span><h1 id="score-title"></h1><p id="score-meta"></p></div><div class="export-actions"><button id="export-xml" class="button secondary" disabled>MusicXML <span aria-hidden="true">↓</span></button><button id="export-pdf" class="button primary" disabled>导出 PDF <span aria-hidden="true">↗</span></button></div></div>
+  <div class="score-controls"><div class="grid-control"><label for="rhythm-grid">节奏精度</label><select id="rhythm-grid"><option value="8">八分音符</option><option value="16" selected>十六分音符</option><option value="32">三十二分音符</option></select></div><details id="part-selector" open><summary>显示声部 <span id="part-count"></span></summary><div id="part-list" class="part-list"></div></details></div>
+  <div id="score-warnings" class="notice" hidden></div>
+  <div class="paper"><div class="paper-top"><span id="paper-caption">STAVES / PERSONAL SCORE</span><span>♩</span></div><div id="score" aria-label="五线谱预览"></div></div>
+  <p class="score-footnote">MIDI 转谱可能需要调整节奏与声部。MusicXML 可在其他制谱软件中继续编辑。<br>导出 PDF 会打开系统打印界面，请选择“另存为 PDF”；iPhone 可在打印预览中使用分享功能。</p>
+ </section>
+ <div class="main-footer"><span>Made for the music you make.</span><a href="https://github.com/LuyGGG/staves-free" target="_blank" rel="noopener noreferrer">源码与非商用许可证 ↗</a></div>
+</main>
+</div>
+<input id="file-input" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" multiple hidden>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="busy" class="busy" role="status" aria-live="polite" hidden><div><span class="spinner"></span><p id="busy-message">正在写下你的旋律…</p></div></div>
+<dialog id="help-dialog"><button id="close-help" class="icon-button dialog-close" aria-label="关闭说明">×</button><span class="eyebrow">A LITTLE GUIDANCE</span><h2>让音乐落在纸上。</h2><p>选择一个或多个 MIDI 文件，打开乐谱，按需要选择声部与节奏精度。PDF 通过系统打印保存，MusicXML 可以继续编辑。</p><h3>文件与隐私</h3><p>文件只存储在当前设备、当前浏览器中，不上传。清除浏览器数据可能删除乐谱库。无痕浏览可能无法保存文件，请保留原始 MIDI 并及时导出。删除库中的文件不会删除设备上的原件。</p><h3>转换范围</h3><p>支持标准 MIDI 格式 0 和 1、和弦、休止符和跨小节延音。采用开头的拍号、调号和速度。暂不推断三连音、摇摆节奏、钢琴左右手，也不提供音频播放。踏板、弯音和打击乐映射可能与原演奏不同。</p><p>每个文件最多 10 MB、30,000 个音符；每次转换最多 32 个谱表和 1,000 小节。复杂文件可尝试减少选中的声部。</p><h3>添加到手机桌面</h3><p>iPhone：Safari → 分享 → 添加到主屏幕。Android：使用浏览器菜单中的“安装应用”或“添加到主屏幕”。首次加载并缓存完成后，可离线转换已有文件。</p><p class="small">转换不调用 AI 模型，不消耗 AI token。软件采用 PolyForm Noncommercial 1.0.0；ABCJS 保留其 MIT 许可证。</p></dialog>
+<script type="application/json" id="app-version">{"version":"1.0.0"}</script>
+</body></html>

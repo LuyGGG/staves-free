@@ -4,3 +4,4 @@ build/
 *.xcuserstate
 xcuserdata/
 node_modules/
+Tests/artifacts/

@@ -1,10 +1,41 @@
 # Staves
 
-An offline iPhone and iPad app that turns Standard MIDI files into written scores.
+An offline MIDI-to-sheet-music tool for the web, iPhone, and iPad. The web version needs no installation, AI model, API key, or token usage.
 Built with SwiftUI, WKWebView, and a bundled ABCJS engraving engine. No server,
 account, API key, subscription, or runtime package download is required.
 
 ![Score viewer](Score-preview.png)
+
+## Use in a browser
+
+The complete static web app is in `web/`. Open the published Site link supplied
+with this project, import one or more `.mid`/`.midi` files, or try **First light**.
+Select parts and rhythm precision, download MusicXML, or use **导出 PDF** to open
+the system print dialog and save as PDF. On iPhone, use the print preview's share
+options to save the PDF. PDF export is the browser's print workflow, not a direct
+PDF download.
+
+- Files are parsed and converted on-device in a Web Worker. MIDI data is not sent
+  to a server. No AI model or token billing is involved in conversion.
+- The library is saved in this browser's IndexedDB. It is not synced across
+  browsers or devices. Clearing site data removes it; keep the original files.
+  If durable storage is unavailable, the app warns and uses session-only storage.
+- Up to 10 MB per file and 50 MB total library storage. Multiple files are imported
+  together; scores are opened and exported individually.
+- Add the page to your phone's home screen from the browser menu. After the
+  first successful load and offline cache setup, conversion works offline.
+- No audio playback or AI transcription is included. This converts existing MIDI.
+- The web folder bundles ABCJS and its MIT notice; the app's own code uses the
+  repository's PolyForm Noncommercial license.
+
+For local development, serve `web/` through HTTP, not `file://`:
+
+```sh
+python3 -m http.server 8080 --directory web
+```
+
+Open `http://localhost:8080`. Production requires HTTPS for offline caching and
+secure-context browser APIs. The app supports a subdirectory hosting path.
 
 ## Run on iPhone or iPad
 
@@ -87,13 +118,17 @@ Optional browser checks require Playwright and Chromium:
 npm install
 npx playwright install chromium
 npm run test:browser
+npm run test:web
 ```
 
 The browser test uses `/usr/bin/chromium` when available, otherwise Playwright's
 bundled Chromium. Set `CHROMIUM_PATH` to override. It verifies engraving without
 ABC warnings, quantization controls, part filtering, an XML parse, narrow-screen
 rendering, malformed-file errors, and the JavaScript/native message contract.
-It also refreshes `Score-preview.png`. No browser dependencies ship in the iOS app.
+The iOS renderer check refreshes `Score-preview.png`. The web check covers
+multi-import, IndexedDB persistence, invalid files, safe file names, offline reload,
+mobile layout, deletion, XML download, and print/PDF output. CI uploads screenshots
+and a sample PDF in the `web-preview-and-pdf` artifact. No browser dependencies ship in the iOS app.
 
 On a Mac, check the native target without device signing:
 

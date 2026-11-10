@@ -1,0 +1,5 @@
+{
+ "id":"./", "name":"Staves · MIDI 五线谱", "short_name":"Staves", "description":"在设备上将 MIDI 转为五线谱，不消耗 AI token。",
+ "lang":"zh-CN", "start_url":"./", "scope":"./", "display":"standalone", "background_color":"#f5f3ec", "theme_color":"#254f43",
+ "icons":[{"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

@@ -1,11 +1,12 @@
 {
-  "name": "staves-ios",
+  "name": "staves",
   "version": "1.0.0",
   "private": true,
-  "description": "Development checks for the offline iOS MIDI-to-notation engine",
+  "description": "Offline MIDI to notation for web and iOS",
   "scripts": {
     "test": "node --test Tests/engine.test.js",
-    "test:browser": "node Tests/render.test.js"
+    "test:browser": "node Tests/render.test.js",
+    "test:web": "node Tests/web.test.js"
   },
   "devDependencies": {
     "playwright": "1.62.1"
