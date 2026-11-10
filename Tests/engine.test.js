@@ -1,0 +1,23 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {parseMIDI,buildScore,toABC,toMusicXML}=require('../Staves/Resources/engine.js');
+const vlq=n=>{const b=[n&127];while(n>>=7)b.unshift((n&127)|128);return b;};
+const chunk=(name,a)=>[...Buffer.from(name),a.length>>>24,(a.length>>>16)&255,(a.length>>>8)&255,a.length&255,...a];
+function midi(tracks,division=480,format=tracks.length>1?1:0){return Uint8Array.from([...chunk('MThd',[0,format,0,tracks.length,division>>8,division&255]),...tracks.flatMap(t=>chunk('MTrk',[...t,0,255,47,0]))]);}
+const note=(pitch,dur=480)=>[0,144,pitch,90,...vlq(dur),128,pitch,0];
+function demo(){return midi([[0,255,3,11,...Buffer.from('First light'),0,255,88,4,4,2,24,8,...[60,62,64,65,67,64,62,60,64,65,67,69,67,64,62,60].flatMap(p=>note(p))],[0,255,3,5,...Buffer.from('Piano'),...note(48,1920),...note(43,1920),...note(48,1920),...note(43,1920)]]);}
+if(process.argv.includes('--fixture')){fs.writeFileSync(path.join(__dirname,'First-light.mid'),demo());process.exit(0);}
+test('format 1, multiple tracks, meter and tempo defaults',()=>{const m=parseMIDI(demo());assert.equal(m.parts.length,2);assert.equal(m.parts[0].notes.length,16);assert.equal(m.tempo,120);const s=buildScore(m);assert.equal(s.measures,4);assert.equal(s.voices[1].clef,'bass');assert.match(toABC(s,'Demo'),/K:C/);});
+test('running status and velocity-zero note off',()=>{const m=parseMIDI(midi([[0,144,60,100,0,64,90,...vlq(480),60,0,0,64,0]]));assert.equal(m.parts[0].notes.length,2);assert.equal(m.parts[0].notes[1].duration,480);assert.equal(buildScore(m).voices.length,1);});
+test('overlapping notes become independent voices, chords stay together',()=>{const m=parseMIDI(midi([[0,144,60,90,0,144,64,90,...vlq(240),144,67,90,...vlq(240),128,60,0,0,128,64,0,...vlq(240),128,67,0]]));const s=buildScore(m);assert.equal(s.voices.length,2);assert.equal(s.voices[0].groups[0].notes.length,2);});
+test('notes crossing bars have ties and complete measures',()=>{const s=buildScore(parseMIDI(midi([[...note(60,2400)]])));assert.equal(s.measures,2);assert.equal(s.voices[0].measures[0][0].tieOut,true);assert.equal(s.voices[0].measures[1][0].tieIn,true);for(const bar of s.voices[0].measures)assert.equal(bar.reduce((a,e)=>a+e.duration,0),16);assert.match(toMusicXML(s),/<tie type="stop"/);});
+test('quantization rounds starts and ends; selection filters parts',()=>{const m=parseMIDI(demo());const s=buildScore(m,{grid:8,parts:[m.parts[1].id]});assert.equal(s.voices.length,1);assert.equal(s.measureUnits,8);assert.throws(()=>buildScore(m,{parts:[]}),/Select/);});
+test('metadata warnings and percussion channel',()=>{const m=parseMIDI(midi([[0,255,88,4,3,2,24,8,...vlq(480),255,88,4,4,2,24,8,0,153,38,70,...vlq(480),137,38,0]]));assert.equal(m.meter.numerator,3);assert.ok(m.warnings.some(x=>x.includes('Time-signature')));assert.ok(m.warnings.some(x=>x.includes('Percussion')));});
+test('malformed, truncated, SMPTE and type 2 files fail clearly',()=>{assert.throws(()=>parseMIDI(new Uint8Array([1,2,3])),/truncated/);const d=demo();assert.throws(()=>parseMIDI(d.slice(0,-2)),/truncated/);assert.throws(()=>parseMIDI(midi([[...note(60)]],0xE728)),/SMPTE/);assert.throws(()=>parseMIDI(midi([[...note(60)]],480,2)),/format 2/);assert.throws(()=>parseMIDI(midi([[0,60,90]])),/running status/);});
+test('MusicXML escapes names, chords and key signatures',()=>{const s=buildScore(parseMIDI(midi([[0,255,89,2,254,1,0,144,61,90,0,144,65,90,...vlq(480),128,61,0,0,128,65,0]])));s.voices[0].name='A & B';const x=toMusicXML(s,'<Test>');assert.match(x,/&lt;Test&gt;/);assert.match(x,/A &amp; B/);assert.match(x,/<chord\/>/);assert.match(x,/<fifths>-2<\/fifths>/);assert.match(toABC(s),/K:Gm/);});
+test('unclosed notes end at the track boundary',()=>{const m=parseMIDI(midi([[0,144,60,90,...vlq(480),176,1,0]]));assert.equal(m.parts[0].notes[0].duration,480);assert.ok(m.warnings.length);});
+test('every voice retains all note onsets and fills each measure',()=>{const m=parseMIDI(demo());const s=buildScore(m);assert.equal(s.voices.reduce((n,v)=>n+v.groups.reduce((n,g)=>n+g.notes.length,0),0),20);for(const v of s.voices)for(const bar of v.measures)assert.equal(bar.reduce((n,e)=>n+e.duration,0),s.measureUnits);});
+
+test('irregular durations are split into writable tied note lengths',()=>{const s=buildScore(parseMIDI(midi([[...note(60,600)]])));const bar=s.voices[0].measures[0];assert.equal(bar[0].duration,4);assert.equal(bar[0].tieOut,true);assert.equal(bar[1].duration,1);assert.equal(bar[1].tieIn,true);for(const e of bar)assert.ok([1,2,3,4,6,8,12,16].includes(e.duration));});
