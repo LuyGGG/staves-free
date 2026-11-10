@@ -103,13 +103,13 @@ xcodebuild -project Staves.xcodeproj -scheme Staves \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-**Validation performed here:** all 11 engine tests pass, and headless Chromium
-viewer checks pass. **Not performed here:** Xcode compilation, physical-device
-execution, the native Files picker/share sheet, and native PDF pagination. This
-Linux environment has no Apple SDK. The macOS CI build is configured but has not
-been run. Run the native build and test PDF export on a simulator/device before
-releasing. The screenshot shows the actual web notation component, not a running
-iOS simulator.
+**Validation:** all 11 engine tests and headless Chromium viewer checks pass.
+The native iOS Simulator build also passes on GitHub's macOS runner. See the
+[successful GitHub Actions run](https://github.com/LuyGGG/staves-free/actions/runs/42803739778).
+The local development environment is Linux; Apple SDK compilation was performed
+by CI. Physical-device execution, the native Files picker/share sheet, and native
+PDF pagination still need testing on a simulator/device before release. The
+screenshot shows the actual web notation component, not a running iOS simulator.
 
 ## Put it in Git
 
