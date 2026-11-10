@@ -8,8 +8,10 @@ account, API key, subscription, or runtime package download is required.
 
 ## Use in a browser
 
-The complete static web app is in `web/`. Open the published Site link supplied
-with this project, import one or more `.mid`/`.midi` files, or try **First light**.
+Open **[Staves web](https://staves-midi-score.laceyshortbread.chatgpt.site)**.
+The hosted Site currently requires its owner to sign in with ChatGPT.
+The complete static web source is in `web/`. Import one or more `.mid`/`.midi`
+files, or try **First light**.
 Select parts and rhythm precision, download MusicXML, or use **导出 PDF** to open
 the system print dialog and save as PDF. On iPhone, use the print preview's share
 options to save the PDF. PDF export is the browser's print workflow, not a direct
@@ -140,7 +142,7 @@ xcodebuild -project Staves.xcodeproj -scheme Staves \
 
 **Validation:** all 11 engine tests and headless Chromium viewer checks pass.
 The native iOS Simulator build also passes on GitHub's macOS runner. See the
-[successful GitHub Actions run](https://github.com/LuyGGG/staves-free/actions/runs/42803739778).
+[successful GitHub Actions run](https://github.com/LuyGGG/staves-free/actions/runs/42805725844).
 The local development environment is Linux; Apple SDK compilation was performed
 by CI. Physical-device execution, the native Files picker/share sheet, and native
 PDF pagination still need testing on a simulator/device before release. The
