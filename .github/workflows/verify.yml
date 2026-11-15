@@ -10,6 +10,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: node scripts/sync.js --check
       - run: node --test Tests/engine.test.js
   ios-build:
     runs-on: macos-latest

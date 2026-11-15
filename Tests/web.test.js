@@ -19,12 +19,21 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg'
  fs.mkdirSync(path.join(root,'Tests/artifacts'),{recursive:true});
  await page.screenshot({path:path.join(root,'Tests/artifacts/web-desktop.png'),fullPage:true});
  await page.locator('#sample-button').click();await page.waitForSelector('#score svg');await page.waitForSelector('#busy[hidden]',{state:'attached'});
- assert.match(await page.locator('#score-meta').textContent(),/2 个谱表 · 4 小节/);
+ assert.match(await page.locator('#score-meta').textContent(),/2 个谱表 · 4 小节 · 4\/4 拍 · ♩ = 120 · C 大调（推断）/);
+ // Instrument recognition: names come from Program Change events, shown in Chinese beside each part.
+ assert.deepEqual(await page.locator('#part-list .part-name').allTextContents(),['Flute','Piano']);
+ assert.match(await page.locator('#part-list label').first().textContent(),/长笛 · 16 个音符/);
+ assert.match(await page.locator('#part-list label').last().textContent(),/大钢琴 · 4 个音符/);
  assert.equal(await page.locator('#export-xml').isEnabled(),true);
+ // Rhythm precision is chosen automatically: the sample has nothing shorter than a quarter note.
+ assert.equal(await page.locator('#rhythm-grid').inputValue(),'auto');assert.equal(await page.locator('#rhythm-grid option').first().textContent(),'自动（八分音符）');
  await page.screenshot({path:path.join(root,'Tests/artifacts/web-score.png'),fullPage:true});
- const downloadPromise=page.waitForEvent('download');await page.locator('#export-xml').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'First light.musicxml');const downloaded=await download.path();const xml=fs.readFileSync(downloaded,'utf8');assert.match(xml,/<score-partwise/);
+ const downloadPromise=page.waitForEvent('download');await page.locator('#export-xml').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'First light.musicxml');const downloaded=await download.path();const xml=fs.readFileSync(downloaded,'utf8');assert.match(xml,/<score-partwise/);assert.match(xml,/<instrument-name>Flute<\/instrument-name>/);assert.match(xml,/<midi-program>74<\/midi-program>/);
  assert.equal(await page.evaluate(xml=>new DOMParser().parseFromString(xml,'application/xml').querySelector('parsererror')?.textContent,xml),undefined);
- await page.locator('#rhythm-grid').selectOption('8');await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score-meta').textContent(),/4 小节/);
+ await page.locator('#rhythm-grid').selectOption('32');await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score-meta').textContent(),/4 小节/);assert.equal(await page.locator('#rhythm-grid option').first().textContent(),'自动');
+ await page.locator('#key-select').selectOption('2');await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score-meta').textContent(),/D 大调$/);
+ await page.locator('#key-select').selectOption('auto');await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score-meta').textContent(),/C 大调（推断）$/);
+ for(const option of ['#opt-triplets','#opt-simplify']){await page.locator(option).uncheck();await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.ok(await page.locator('#score svg').count()>0);await page.locator(option).check();await page.waitForSelector('#busy[hidden]',{state:'attached'});}
  await page.locator('#part-list input').last().uncheck();await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score-meta').textContent(),/1 个谱表/);
  await page.locator('#part-list input').first().uncheck();await page.waitForSelector('#busy[hidden]',{state:'attached'});assert.match(await page.locator('#score').textContent(),/至少选择一个声部/);assert.equal(await page.locator('#export-pdf').isDisabled(),true);
  await page.locator('#part-list input').first().check();await page.waitForSelector('#score svg');await page.waitForSelector('#busy[hidden]',{state:'attached'});
@@ -42,5 +51,5 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg'
  await page.screenshot({path:path.join(root,'Tests/artifacts/web-mobile-home.png'),fullPage:true});
  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
  await browser.close();await new Promise(r=>server.close(r));
- console.log('PASS: desktop/mobile, sample, worker conversion, multi-import, safe filenames, persistent library, part selection, rhythm, XML download, PDF print layout, invalid MIDI, deletion, offline reload, no external requests.');
+ console.log('PASS: desktop/mobile, sample, instrument names, worker conversion, key and rhythm options, multi-import, safe filenames, persistent library, part selection, rhythm, XML download, PDF print layout, invalid MIDI, deletion, offline reload, no external requests.');
 })().catch(e=>{console.error(e);process.exit(1)});

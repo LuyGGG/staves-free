@@ -34,7 +34,10 @@ final class Library: ObservableObject {
                 guard size <= 10 * 1024 * 1024 else { throw ImportError.tooLarge }
                 let data = try Data(contentsOf: url)
                 guard data.count <= 10 * 1024 * 1024 else { throw ImportError.tooLarge }
-                guard data.prefix(4) == Data("MThd".utf8) else { throw ImportError.notMIDI }
+                // A Standard MIDI file, or one inside a RIFF "RMID" wrapper (.rmi), which the engine also reads.
+                let isMIDI = data.prefix(4) == Data("MThd".utf8)
+                let isRMID = data.count >= 12 && data.prefix(4) == Data("RIFF".utf8) && data.subdata(in: 8..<12) == Data("RMID".utf8)
+                guard isMIDI || isRMID else { throw ImportError.notMIDI }
                 let name = url.deletingPathExtension().lastPathComponent
                 let target = directory.appendingPathComponent("\(UUID().uuidString)-\(name).mid")
                 try data.write(to: target, options: .atomic)
@@ -48,8 +51,8 @@ final class Library: ObservableObject {
         catch { self.error = error.localizedDescription }
     }
     func addDemo() {
-        // Format 0, 480 PPQ: C-major melody with a bass accompaniment.
-        var track: [UInt8] = [0,0xFF,0x58,4,4,2,24,8, 0,0xFF,0x51,3,7,0xA1,0x20]
+        // Format 0, 480 PPQ: a C-major flute melody (program 73) with a piano bass line (program 0).
+        var track: [UInt8] = [0,0xFF,0x58,4,4,2,24,8, 0,0xFF,0x51,3,7,0xA1,0x20, 0,0xC0,73, 0,0xC1,0]
         let pitches: [UInt8] = [60,62,64,65,67,64,62,60,64,65,67,69,67,64,62,60]
         for (i, pitch) in pitches.enumerated() {
             track += [0,0x90,pitch,85, 0,0x91,UInt8(i < 8 ? 48 : 43),60,
